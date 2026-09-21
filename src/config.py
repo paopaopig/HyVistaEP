@@ -10,7 +10,6 @@ CONFIGS = {
         T=3, lr=0.003, weight_decay=2e-4, drop_mlp=0.3, drop_conv=0.3,
         drop_classifier=0.2, mlp_hidden=256,
         pos_weight_scale=1.0, subcell_k=1.0, homology_q=100,
-        esm_file="human_biogrid_esm3_mean.pt",
     ),
     "yeast": dict(
         dataset="BIOGRID", gene_dim=36, subcell_dim=1024, homology_dim=62,
@@ -18,7 +17,6 @@ CONFIGS = {
         T=5, lr=0.005, weight_decay=2e-4, drop_mlp=0.2, drop_conv=0.2,
         drop_classifier=0.2, mlp_hidden=256,
         pos_weight_scale=1.0, subcell_k=1.0, homology_q=15,
-        esm_file="yeast_biogrid_esm3_mean.pt",
     ),
     "melanogaster": dict(
         dataset="BIOGRID", gene_dim=66, subcell_dim=1024, homology_dim=203,
@@ -26,7 +24,6 @@ CONFIGS = {
         T=6, lr=0.002, weight_decay=5e-4, drop_mlp=0.3, drop_conv=0.3,
         drop_classifier=0.2, mlp_hidden=64,
         pos_weight_scale=0.75, subcell_k=1.0, homology_q=80,
-        esm_file="melanogaster_biogrid_esm3_mean.pt",
     ),
     "coli": dict(
         dataset="BIOGRID", gene_dim=24, subcell_dim=0, homology_dim=189,
@@ -34,7 +31,6 @@ CONFIGS = {
         T=7, lr=0.005, weight_decay=2e-4, drop_mlp=0.3, drop_conv=0.3,
         drop_classifier=0.2, mlp_hidden=256,
         pos_weight_scale=0.65, subcell_k=None, homology_q=35,
-        esm_file="coli_biogrid_esm3_mean.pt",
     ),
 }
 
@@ -52,7 +48,7 @@ def get_config(species, data_root=None):
     cfg["data_root"] = str(Path(data_root).expanduser().resolve())
     cfg["esm_path"] = str(
         Path(cfg["data_root"]) / species / "PPI" / cfg["dataset"]
-        / "bingo" / cfg.pop("esm_file")
+        / "features" / "esm3_embeddings.pt"
     )
     cfg.update(conv_hidden1=64, conv_hidden2=32, classifier_hidden1=64,
                classifier_hidden2=32, esm_dim=1536, epochs=40, folds=10, seed=45)

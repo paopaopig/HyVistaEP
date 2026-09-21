@@ -10,7 +10,7 @@ SPECIES = ("yeast", "human", "melanogaster", "coli")
 
 def prepare_dataset(dataset_dir):
     dataset_dir = Path(dataset_dir)
-    names = np.load(dataset_dir / "gene_name.npy", allow_pickle=True)
+    names = np.load(dataset_dir / "protein_names.npy", allow_pickle=True)
     node_count = len(names)
     edge_path = dataset_dir / "ppi_edges.npz"
     spin_path = dataset_dir / "SPIN.npy"

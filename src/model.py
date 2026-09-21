@@ -2,6 +2,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, HypergraphConv
+from torch_geometric.data import Data
 import numpy as np
 import os
 
@@ -17,6 +18,44 @@ def dataset_root(species, dataset):
         )
     return os.path.join(os.path.abspath(os.path.expanduser(data_root)), species,
                         "PPI", dataset)
+
+
+def build_dynamic_snapshots(root):
+    feature_root = os.path.join(root, "features")
+    gene_expression = np.load(
+        os.path.join(feature_root, "gene_expression.npy")
+    )
+    dynamic_activity = np.load(
+        os.path.join(feature_root, "dynamic_activity.npy")
+    )
+    with np.load(os.path.join(root, "ppi_edges.npz"), allow_pickle=False) as data:
+        ppi_edges = data["edge_index"]
+
+    if gene_expression.ndim != 2 or dynamic_activity.ndim != 2:
+        raise ValueError("Dynamic feature matrices must be two-dimensional")
+    if gene_expression.shape[0] != dynamic_activity.shape[0]:
+        raise ValueError("Dynamic feature matrices have inconsistent node counts")
+    if ppi_edges.ndim != 2 or ppi_edges.shape[0] != 2:
+        raise ValueError(f"Unexpected PPI edge shape: {ppi_edges.shape}")
+
+    snapshot_x = torch.as_tensor(
+        np.hstack([gene_expression, dynamic_activity]), dtype=torch.float
+    )
+    snapshots = []
+    for timepoint in range(dynamic_activity.shape[1]):
+        active = dynamic_activity[:, timepoint] != 0
+        keep = active[ppi_edges[0]] & active[ppi_edges[1]]
+        active_edges = ppi_edges[:, keep]
+        directed_edges = np.concatenate(
+            [active_edges, active_edges[::-1]], axis=1
+        )
+        snapshots.append(
+            Data(
+                x=snapshot_x,
+                edge_index=torch.as_tensor(directed_edges, dtype=torch.long),
+            )
+        )
+    return snapshots
 
 
 def build_sliding_window_dynamic_hypergraph(
@@ -240,24 +279,10 @@ class DyHTSAGCN(nn.Module):
         )
 
         if self.has_dynamic_branch:
-            feature_root = os.path.join(
-                dataset_root(species, dataset), "refined_net_and_fea"
-            )
-            mapped_path = os.path.join(
-                feature_root,
-                f"dynamic_network_k={k_value:.2f}_all_fea_(1-F).pt",
-            )
-            active_path = os.path.join(feature_root, "fea_act.npy")
-            mapped_graphs = torch.load(mapped_path, weights_only=False)
-            x_active_all = torch.tensor(np.load(active_path), dtype=torch.float)
-            for i in range(len(mapped_graphs)):
-                x_gene_ori = mapped_graphs[i].x
-                if not isinstance(x_gene_ori, torch.Tensor):
-                    x_gene_ori = torch.tensor(x_gene_ori, dtype=torch.float)
-                mapped_graphs[i].x = torch.cat([x_gene_ori, x_active_all], dim=1)
-
-            dynamic_cache_key = (mapped_path, self.T, 3, None)
+            root = dataset_root(species, dataset)
+            dynamic_cache_key = (root, self.T, 3, None)
             if dynamic_cache_key not in _DYNAMIC_HYPERGRAPH_CACHE:
+                mapped_graphs = build_dynamic_snapshots(root)
                 _DYNAMIC_HYPERGRAPH_CACHE[dynamic_cache_key] = (
                     build_sliding_window_dynamic_hypergraph(
                         mapped_graphs,

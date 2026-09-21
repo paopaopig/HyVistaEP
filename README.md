@@ -1,8 +1,14 @@
 # HyVistaEP
 
-HyVistaEP predicts essential proteins in yeast, human, fruit fly, and *E. coli*.
+**Multi-view hypergraph learning for essential protein prediction**
 
-## Installation
+HyVistaEP integrates temporal gene expression, subcellular localization,
+orthology, protein sequence representations, and PPI topology within a unified
+hypergraph framework. The repository provides the complete training and
+evaluation workflow for *S. cerevisiae*, *H. sapiens*, *D. melanogaster*, and
+*E. coli*, together with the processed inputs and ten-fold pretrained models.
+
+## Environment
 
 Python 3.10 and a CUDA-enabled GPU are recommended.
 
@@ -15,17 +21,18 @@ export MKL_NUM_THREADS=1
 
 ## Data preparation
 
-Prepare the data for all species:
+Prepare the graph data for all four species:
 
 ```bash
 python -u src/prepare_data.py --data-root data
 ```
 
-The same preparation is performed automatically when training or testing starts.
+Data preparation is also invoked automatically when training or evaluation
+starts, so this command may be omitted in the standard workflow.
 
-## Test
+## Evaluate pretrained models
 
-Test one species:
+Evaluate one species with the supplied ten-fold checkpoints:
 
 ```bash
 python -u src/test.py \
@@ -34,23 +41,23 @@ python -u src/test.py \
   --checkpoint-dir checkpoints/yeast
 ```
 
-Test all species:
+Evaluate all four species:
 
 ```bash
 bash scripts/test_all_species.sh
 ```
 
-Valid species names are `yeast`, `human`, `melanogaster`, and `coli`.
+Accepted species names are `yeast`, `human`, `melanogaster`, and `coli`.
 
-## Train
+## Train and evaluate
 
-Run a short training and testing example:
+Run a short end-to-end training and evaluation test:
 
 ```bash
 bash scripts/smoke_test.sh
 ```
 
-Run ten-fold training:
+Run ten-fold training for one species:
 
 ```bash
 python -u src/train.py \
@@ -61,7 +68,7 @@ python -u src/train.py \
   --folds 10
 ```
 
-Test the trained models:
+Evaluate the resulting checkpoints:
 
 ```bash
 python -u src/test.py \

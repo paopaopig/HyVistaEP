@@ -294,7 +294,7 @@ def attach_esm_to_ppi(data_gat_all, species, dataset, esm_path):
     A_static = None
     root = dataset_root(species, dataset)
     nodes_name = np.load(
-        os.path.join(root, "gene_name.npy"), allow_pickle=True
+        os.path.join(root, "protein_names.npy"), allow_pickle=True
     ).astype(str).tolist()
 
     if esm_path is not None:
@@ -312,7 +312,7 @@ def attach_esm_to_ppi(data_gat_all, species, dataset, esm_path):
         if esm_data.get("failures"):
             raise ValueError(f"ESM3 file contains failures: {esm_data['failures']}")
         if "proteins" in esm_data and list(map(str, esm_data["proteins"])) != nodes_name:
-            raise ValueError("ESM3 protein order does not match gene_name.npy")
+            raise ValueError("ESM3 protein order does not match protein_names.npy")
 
         A_static = np.load(os.path.join(root, "SPIN.npy"))
         if A_static.shape != (len(nodes_name), len(nodes_name)):
@@ -351,7 +351,7 @@ def attach_esm_to_ppi(data_gat_all, species, dataset, esm_path):
         )
 
     subcellular_csv = os.path.join(
-        root, "refined_net_and_fea", "fea_sub_1024.csv"
+        root, "features", "subcellular_localization.csv"
     )
     if os.path.exists(subcellular_csv):
         ppi_matrix = A_static
@@ -409,7 +409,7 @@ def attach_esm_to_ppi(data_gat_all, species, dataset, esm_path):
         ]
 
     homology_feature_path = os.path.join(
-        root, "refined_net_and_fea", "fea_orth.npy"
+        root, "features", "orthology.npy"
     )
     if os.path.exists(homology_feature_path):
         homology_q_text = os.environ.get("HOMOLOGY_Q")
@@ -450,18 +450,18 @@ def attach_esm_to_ppi(data_gat_all, species, dataset, esm_path):
 def _load_base_node_data(species, dataset, use_subcellular):
     root = dataset_root(species, dataset)
     node_names = np.load(
-        os.path.join(root, "gene_name.npy"), allow_pickle=True
+        os.path.join(root, "protein_names.npy"), allow_pickle=True
     )
     num_nodes = len(node_names)
 
-    feature_root = os.path.join(root, "refined_net_and_fea")
-    gene_features = np.load(os.path.join(feature_root, "fea_gene.npy"))
-    homology_features = np.load(os.path.join(feature_root, "fea_orth.npy"))
+    feature_root = os.path.join(root, "features")
+    gene_features = np.load(os.path.join(feature_root, "gene_expression.npy"))
+    homology_features = np.load(os.path.join(feature_root, "orthology.npy"))
     feature_blocks = [gene_features]
 
     if use_subcellular:
         subcell_frame = pd.read_csv(
-            os.path.join(feature_root, "fea_sub_1024.csv")
+            os.path.join(feature_root, "subcellular_localization.csv")
         )
         subcell_features = subcell_frame.iloc[:, 2:].to_numpy()
         feature_blocks.append(subcell_features)
@@ -469,8 +469,8 @@ def _load_base_node_data(species, dataset, use_subcellular):
 
     feature_blocks.append(homology_features)
     for name, values in (
-        ("fea_gene", gene_features),
-        ("fea_orthologous", homology_features),
+        ("gene_expression", gene_features),
+        ("orthology", homology_features),
     ):
         if values.ndim != 2 or values.shape[0] != num_nodes:
             raise ValueError(
