@@ -12,13 +12,11 @@ evaluation workflow for *S. cerevisiae*, *H. sapiens*, *D. melanogaster*, and
 
 ## 🧬 Model Architecture
 
-<p align="center">
+<div align="center">
   <img src="assets/hyvistaep_architecture.png" alt="HyVistaEP model architecture" width="900">
-</p>
-
-<p align="center">
+  <br>
   <em>Overview of the HyVistaEP framework and its multi-view feature-fusion pipeline.</em>
-</p>
+</div>
 
 ## 🛠️ 1. Environment Setup
 
